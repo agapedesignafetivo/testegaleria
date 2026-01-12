@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cabine de Fotos - Emojis</title>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      margin: 0;
+      background: #000;
+      color: #fff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+    }
+
+    /* Vídeo em tela cheia */
+    #video {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      background: #000;
+      z-index: 1;
+    }
+
+    /* Moldura por cima */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      margin: auto;
+      max-width: 100vw;
+      max-height: 100vh;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* Canvas dos brilhos por cima de tudo */
+    #brilhosCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    /* Contêiner dos botões: faixa rolável embaixo */
+    #controls {
+      position: fixed;
+      bottom: 25px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      gap: 20px;
+      padding: 0 16px;
+      z-index: 20;
+
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+    }
+
+    #controls::-webkit-scrollbar {
+      display: none;
+    }
+
+    .icon-btn {
+      flex: 0 0 auto;
+      scroll-snap-align: center;
+
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      background: rgba(0,0,0,0.65);
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, background 0.2s;
+      color: #fff;
+      font-size: 32px;
+      line-height: 1;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.92);
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* Preview da FOTO */
+    #preview {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      max-width: 40vw;
+      border: 2px solid #fff;
+      display: none;
+      z-index: 10;
+    }
+
+    /* Mensagem no topo */
+    #status {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      display: none;
+      z-index: 10;
+    }
+
+    /* Indicador REC (tempo) */
+    #recIndicator {
+      position: fixed;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #ff5555;
+      z-index: 15;
+    }
+
+    #recIndicator .rec-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ff0000;
+      box-shadow: 0 0 6px rgba(255,0,0,0.7);
+      animation: recBlink 1s infinite;
+    }
+
+    @keyframes recBlink {
+      0%, 50% { opacity: 1; }
+      50%, 100% { opacity: 0.2; }
+    }
+
+    /* Overlay de preview do VÍDEO convertido */
+    #videoPreviewOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+    }
+
+    .video-preview-box {
+      max-width: 90vw;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #videoPreview {
+      max-width: 100%;
+      max-height: 70vh;
+      border-radius: 12px;
+      background: #000;
+    }
+
+    #btnDownloadVideo,
+    #btnRecordAgain {
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      background: #ffffffd0;
+      color: #000;
+    }
+
+    #btnRecordAgain {
+      background: #f44336;
+      color: #ffffff;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 11px;
+      color: #ccc;
+      padding-bottom: 4px;
+      z-index: 5;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <input type="file" id="galleryInput" accept="image/*" hidden>
+
+
+  <video id="video" autoplay playsinline muted></video>
+
+  <!-- começa pela moldura padrão -->
+  <img id="overlay" src="moldura1.png" alt="Moldura" />
+
+  <!-- canvas dos brilhos -->
+  <canvas id="brilhosCanvas"></canvas>
+  <img id="brilhoImg" src="brilho.png" style="display:none;" alt="Brilho">
+
+  <!-- canvases internos -->
+  <canvas id="photoCanvas" style="display:none;"></canvas>
+  <canvas id="recordCanvas" style="display:none;"></canvas>
+
+  <!-- preview de VÍDEO convertido -->
+  <div id="videoPreviewOverlay">
+    <div class="video-preview-box">
+      <video id="videoPreview" controls playsinline></video>
+      <button id="btnDownloadVideo">Salvar vídeo</button>
+      <button id="btnRecordAgain">Gravar novamente</button>
+    </div>
+  </div>
+
+  <!-- preview da FOTO -->
+  <img id="preview" />
+
+  <!-- indicador REC -->
+  <div id="recIndicator">
+    <span class="rec-dot"></span>
+    <span id="recTime">00:00</span>
+  </div>
+
+  <!-- mensagem no topo -->
+  <div id="status"></div>
+
+  <!-- controles com EMOJIS -->
+  <div id="controls">
+    <button id="btnCamera" class="icon-btn" aria-label="Trocar câmera">🔄</button>
+
+    <button id="btnPhoto" class="icon-btn" aria-label="Tirar foto">📸</button>
+
+    <button id="btnStartRec" class="icon-btn" aria-label="Gravar vídeo">⏺️</button>
+
+    <button id="btnStopRec" class="icon-btn" style="display:none;" aria-label="Parar gravação">⏹️</button>
+
+    <button id="btnBrilhos" class="icon-btn" aria-label="Ligar ou desligar brilhos">✨</button>
+
+    <button id="btnGallery" class="icon-btn" aria-label="Galeria">🖼️</button>
+
+
+  </div>
+
+  <footer>
+    © 2025 Cris Produções. Todos os direitos reservados.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
