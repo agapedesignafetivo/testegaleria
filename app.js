@@ -408,8 +408,6 @@ btnBrilhos.onclick = () => {
   status(brilhosAtivos ? 'Brilhos ON ✨' : 'Brilhos OFF');
 };
 
-PARA FUNCIONAR A GALERIA 
-
 btnGallery.onclick = () => {
   galleryInput.click();
 };
