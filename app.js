@@ -44,6 +44,60 @@ const galleryInput = el('galleryInput');
 let galleryImage = null;
 
 
+const btnDownloadPhoto = el('btnDownloadPhoto');
+
+btnDownloadPhoto.onclick = () => {
+  if (!galleryImage) {
+    status('Nenhuma foto da galeria selecionada', true);
+    return;
+  }
+
+  // desenha a foto da galeria no canvas
+  const { width, height } = CONFIG.FOTO;
+  photoCanvas.width = width;
+  photoCanvas.height = height;
+  const ctx = photoCanvas.getContext('2d');
+
+  // preenche fundo preto
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, width, height);
+
+  // ajusta a imagem proporcionalmente
+  const img = galleryImage;
+  const imgAspect = img.width / img.height;
+  const canvasAspect = width / height;
+
+  let dw, dh, dx, dy;
+
+  if (imgAspect > canvasAspect) {
+    dh = height;
+    dw = height * imgAspect;
+    dx = (width - dw) / 2;
+    dy = 0;
+  } else {
+    dw = width;
+    dh = width / imgAspect;
+    dx = 0;
+    dy = (height - dh) / 2;
+  }
+
+  ctx.drawImage(img, dx, dy, dw, dh);
+
+  // aplica a moldura
+  ctx.drawImage(overlay, 0, 0, width, height);
+
+  // gera e baixa o arquivo
+  const dataUrl = photoCanvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = 'foto-galeria-moldura.png';
+  a.click();
+
+  status('Foto da galeria salva com moldura');
+};
+
+
+
 
 // ESTADO
 let stream;
@@ -407,6 +461,7 @@ btnBrilhos.onclick = () => {
   brilhosAtivos = !brilhosAtivos;
   status(brilhosAtivos ? 'Brilhos ON ✨' : 'Brilhos OFF');
 };
+
 
 btnGallery.onclick = () => {
   galleryInput.click();
