@@ -475,6 +475,13 @@ galleryInput.onchange = (e) => {
   reader.onload = () => {
     galleryImage = new Image();
     galleryImage.src = reader.result;
+
+    // Mostrar na tela como preview
+    preview.src = reader.result;
+    preview.style.display = 'block';
+    // fecha automaticamente após 5 segundos, mas o usuário ainda pode clicar para fechar
+    setTimeout(() => preview.style.display = 'none', 5000);
+    preview.onclick = () => { preview.style.display = 'none'; };
   };
   reader.readAsDataURL(file);
 };
